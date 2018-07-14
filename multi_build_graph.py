@@ -1,8 +1,6 @@
 
 # -*-coding:utf-8-*-
-"""
-ayou
-"""
+
  
 import requests
 from requests.exceptions import HTTPError, ConnectionError
