@@ -13,7 +13,7 @@ from scipy.io import savemat, loadmat
 
 import re
 import csv
- 
+import HTMLParser
 class ThreadUrl(threading.Thread):
     def __init__(self, queue, package_dict):
         threading.Thread.__init__(self)
@@ -45,14 +45,17 @@ class ThreadUrl(threading.Thread):
                 print(str(e))
                 return str(e)
             try:
+            	#html_parser = HTMLParser.HTMLParser()
+            	#text = html_parser.unescape(responses.text)
                 bs = BeautifulSoup(responses.text, "html5lib")
-                # find the published date of the package
+                #find the published date of the package
                 pre_published = bs.find(string = "Published:")
                 
                 if pre_published:
                     publish_date = pre_published.find_next("td").text
                     print("The published date of package %s is %s" % (package_name, publish_date))
                     publish_dict[package_name] = publish_date
+                
 
                 title_node = bs.find("h2")
 
@@ -62,6 +65,7 @@ class ThreadUrl(threading.Thread):
                     title = whole_title[colon_idx + 2:]
                     print("The title of package %s is %s" % (package_name, title))
                     title_dict[package_name] = title
+                
 
                 desp_node = bs.find("p")
 
@@ -72,7 +76,8 @@ class ThreadUrl(threading.Thread):
 
                         print("The description of package %s is %s" % (package_name, desp))
                         desp_dict[package_name] = desp
-                    
+                
+                   
 
                 authors_node = bs.find(string = "Author:")
 
@@ -82,6 +87,7 @@ class ThreadUrl(threading.Thread):
                     author_num = len(all_authors.split(","))
                     print("The authors' number of package %s is %d" % (package_name, author_num))
                     author_num_dict[package_name] = author_num
+                
 
 
                 maintainer_node = bs.find(string = "Maintainer:")
@@ -92,8 +98,27 @@ class ThreadUrl(threading.Thread):
                     
                     print("The maintainer of package %s is %s" % (package_name, maintainer))
                     maintainer_dict[package_name] = maintainer
+                
+                
+                resource_node = bs.find(href = re.compile(".*Archive.*"))
+                if resource_node:
+                	resoure_url = resource_node['href']
+                	resource_responses = self.s.get(resoure_url)
+                	resource_bs = BeautifulSoup(resource_responses.text, "html5lib")
+                	parent = resource_bs.find_all(src = "/icons/compressed.gif")
+                	if(parent):
+	                	version_num = len(parent)
+	                	old_version_num[package_name] = version_num
+	                	print("The version_num of package %s is %d" % (package_num, version_num))
 
-            
+	            # suggests_node = bs.find(string = "")
+	                
+
+
+
+
+
+            	
 
                 
                         
@@ -116,14 +141,16 @@ def main():
     a = f.read()
     package_dict = eval(a)
     f.close()
+
     
 
     test_num = 0
     for package_name in package_dict.keys():
-        
+        # if test_num == 1000:
+        # 	break
         #url = 'https://cran.r-project.org/web/packages/' + package_name + '/index.html'
         queue.put(package_name)
-        
+        # test_num = test_num +1
         
 
  
@@ -144,6 +171,7 @@ def main():
     print(len(desp_dict))
     print(len(author_num_dict))
     print(len(maintainer_dict))
+    print(len(old_version_num))
     
 
     f = open('publish_dict.txt','w')
@@ -161,6 +189,9 @@ def main():
     f = open('maintainer.txt','w')
     f.write(str(maintainer_dict))
     f.close()
+    f = open('old_version_num.txt','w')
+    f.write(str(old_version_num))
+    f.close() 
     
     
 
@@ -175,5 +206,6 @@ if __name__=="__main__":
     author_num_dict = {}
     maintainer_dict = {}
     old_version_num = {}
+
     main()
     print("Elapsed Time: %s" % (time.time() - start))

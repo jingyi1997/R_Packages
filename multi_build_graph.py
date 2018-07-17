@@ -43,22 +43,21 @@ def build_dicts():
 #ThreadUrl继承线程类
 #run函数将QUEUE中的URL逐个取出,然后打开,取得博客详细页面的标题
 class ThreadUrl(threading.Thread):
-    def __init__(self, queue, in_nodes, out_nodes, package_dict, extra_dict):
+    def __init__(self, queue, in_nodes, out_nodes, package_dict):
         threading.Thread.__init__(self)
         self.queue = queue
         self.s = requests.session()
         self.in_nodes = in_nodes
         self.out_nodes = out_nodes
         self.package_dict = package_dict
-        self.extra_dict = extra_dict
-
+       
         
  
     def run(self):
         package_dict = self.package_dict
         in_nodes = self.in_nodes
         out_nodes = self.out_nodes
-        extra_dict = self.extra_dict
+       
         package_num = len(package_dict)
         requests.adapters.DEFAULT_RETRIES = 5  
 
@@ -105,8 +104,11 @@ class ThreadUrl(threading.Thread):
                 for imp_dep_pack in imp_dep_packs:
                     if package_dict.has_key(imp_dep_pack) is False and extra_dict.has_key(imp_dep_pack) is False:
                         print(imp_dep_pack, "does not exist")
-                        extra_dict[imp_dep_pack] = package_num 
-                        package_num = package_num + 1
+                        if extra_dict_lock.acquire():
+                            package_num = len(extra_dict) + len(package_dict)
+                            extra_dict[imp_dep_pack] = package_num
+                            extra_dict_lock.release() 
+                        
                         
                         out_nodes.append(curr_package_num)
                         in_nodes.append(package_num)
@@ -137,13 +139,15 @@ def main():
     a = f.read()
     package_dict = eval(a)
     f.close()
-    extra_dict = {}
+    
 
     test_num = 0
     for package_name in package_dict.keys():
-        
+        # if test_num == 500:
+        #     break
         #url = 'https://cran.r-project.org/web/packages/' + package_name + '/index.html'
         queue.put(package_name)
+        # test_num = test_num + 1
         
 
  
@@ -153,7 +157,7 @@ def main():
 
 
     for i in range(10):
-        t = ThreadUrl(queue, in_nodes, out_nodes, package_dict, extra_dict)
+        t = ThreadUrl(queue, in_nodes, out_nodes, package_dict)
         t.setDaemon(True)
         t.start()
  
@@ -181,5 +185,7 @@ def main():
  
 if __name__=="__main__":
     start = time.time()
+    extra_dict_lock = threading.Lock()
+    extra_dict = {} 
     main()
     print("Elapsed Time: %s" % (time.time() - start))
