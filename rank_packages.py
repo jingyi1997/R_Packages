@@ -2,11 +2,11 @@ import numpy as np
 from scipy.io import savemat, loadmat
 out_nodes = np.loadtxt('out_nodes.txt', dtype = np.int32)
 in_nodes = np.loadtxt('in_nodes.txt', dtype = np.int32)
-extra_out_nodes = np.loadtxt('extra_out_nodes.txt', dtype = np.int32)
-extra_in_nodes = np.loadtxt('extra_in_nodes.txt', dtype = np.int32)
+# extra_out_nodes = np.loadtxt('extra_out_nodes.txt', dtype = np.int32)
+# extra_in_nodes = np.loadtxt('extra_in_nodes.txt', dtype = np.int32)
 
-out_nodes = np.concatenate((out_nodes, extra_out_nodes))
-in_nodes = np.concatenate((in_nodes, extra_in_nodes))
+# out_nodes = np.concatenate((out_nodes, extra_out_nodes))
+# in_nodes = np.concatenate((in_nodes, extra_in_nodes))
 
 #print(out_nodes.shape)
 #print(in_nodes.shape)
@@ -50,7 +50,7 @@ def PageRank(G, beta, page_num):
         	break
         r_old = r_new
 
-#PageRank(pack_matrix, 0.85, total_pack_num)
+PageRank(pack_matrix, 0.85, total_pack_num)
 
 r_new = loadmat('pageRank.mat')['pageRank']
 r_new = np.squeeze(r_new)
